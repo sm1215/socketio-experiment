@@ -1,0 +1,39 @@
+#world {
+  height: 600px;
+  width: 800px;
+  border:1px solid;
+  box-sizing:border-box;
+  margin:50px auto 0 auto;
+  position:relative;
+}
+
+#chat {
+  display:block;
+  border:1px solid;
+  box-sizing:border-box;
+  width:800px;
+  margin:0 auto;
+  font-family:Arial;
+  font-size:14px;
+  line-height:18px;
+  padding:3px;
+}
+
+.player {
+  height: 20px;
+  width: 20px;
+  background-color:#f00;
+  position:absolute;
+  top:0px;
+  left:0px;
+}
+
+.messages {
+  position: relative;
+  top: -30px;
+  left: -20px;
+  font-family:Arial;
+  font-size:12px;
+  line-height:12px;
+  width:100px;
+}
