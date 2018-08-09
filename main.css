@@ -26,6 +26,7 @@
   position:absolute;
   top:0px;
   left:0px;
+  z-index:2;
 }
 
 .messages {
@@ -36,4 +37,23 @@
   font-size:12px;
   line-height:12px;
   width:100px;
+}
+
+.aim {
+  position: absolute;
+  top: -9px;
+  left: 9px;
+  height: 10px;
+  width: 2px;
+  background-color:#000;
+}
+
+.projectile {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 4px;
+  width: 4px;
+  background-color:#000;
+  z-index:1;
 }

@@ -11,12 +11,12 @@
 <body>
   <p>W, A, S, D to move.</p>
   <p>Arrow keys also work.</p>
-  <p>Chat doesn't work yet.</p>
-  <!-- <p>Enter to start chatting, enter again to stop.</p> -->
-  <!-- <p>Esc to clear / cancel chat.</p> -->
+  <p>Enter to start chatting, enter again to send.</p>
+  <p>Esc to clear / cancel chat.</p>
   <div id="world"></div>
-  <input id="chat" type="text" placeholder="(WIP) Enter to chat">
-  <script src="/main.js" type="text/javascript"></script>
+  <input id="chat" type="text" placeholder="Enter to chat">
+  <script src="/dom.js" type="text/javascript"></script>
+  <script src="/client.js" type="text/javascript"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     var socket = io();
