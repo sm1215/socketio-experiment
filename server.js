@@ -86,6 +86,8 @@ io.on('connection', function(socket) {
   socket.on('startUp', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_UP = true;
+    // Set the opposite to false it was somehow flagged and player is trying to regain control
+    player.MOVE_DOWN = false;
   });
 
   socket.on('stopUp', function(playerId) {
@@ -96,6 +98,7 @@ io.on('connection', function(socket) {
   socket.on('startDown', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_DOWN = true;
+    player.MOVE_UP = false;
   });
 
   socket.on('stopDown', function(playerId) {
@@ -106,6 +109,7 @@ io.on('connection', function(socket) {
   socket.on('startLeft', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_LEFT = true;
+    player.MOVE_RIGHT = false;
   });
 
   socket.on('stopLeft', function(playerId) {
@@ -116,6 +120,7 @@ io.on('connection', function(socket) {
   socket.on('startRight', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_RIGHT = true;
+    player.MOVE_LEFT = false;
   });
 
   socket.on('stopRight', function(playerId) {
