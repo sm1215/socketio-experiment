@@ -11,6 +11,7 @@ const game = {
   },
   rotUpdateInterval: 100,
   reloadInterval: 100,
+  BLEED_TIME: 500, //ms
 
   init: function() {
     this.setupEls();
@@ -45,11 +46,16 @@ const game = {
     socket.on('message received', this.messageReceived);
     socket.on('player fired', this.createProjectile);
     socket.on('remove projectile', this.removeProjectile);
+    socket.on('player hit', this.playerHit);
+    socket.on('remove player', this.removePlayer);
   },
 
   setPlayer(player) {
     game.playerId = player.id;
     game.player = player;
+
+    console.log("setPlayer id:", player.id);
+    console.log("setPlayer player", player);  
   },
 
   updatePlayers(players) {
@@ -94,6 +100,19 @@ const game = {
       game.els.world.appendChild(dom.createPlayerElement(player));
     });
     game.updatePlayers(players);
+  },
+
+  playerHit(playerId) {
+    const playerEl = document.querySelector('#player-' + playerId);
+    playerEl.classList.add('hit');
+    setTimeout(function() {
+      playerEl.classList.remove('hit');
+    }, game.BLEED_TIME);
+  },
+
+  removePlayer(playerId) {
+    const playerEl = document.querySelector('#player-' + playerId);
+    playerEl.parentNode.removeChild(playerEl);
   },
 
   createProjectile(projectile) {
@@ -220,10 +239,10 @@ const game = {
       socket.emit('startRight', game.player.id);
     }
 
-    // Space
-    if((k == 32) && !game.chatting) {
-      socket.emit('fire', game.player.id);
-    }
+    // // Space
+    // if((k == 32) && !game.chatting) {
+    //   socket.emit('fire', game.player.id);
+    // }
 
     // Enter
     if(k == 13) {

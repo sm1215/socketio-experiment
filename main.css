@@ -1,3 +1,7 @@
+* {
+  user-select: none;
+}
+
 #world {
   height: 600px;
   width: 800px;
@@ -27,6 +31,23 @@
   top:0px;
   left:0px;
   z-index:2;
+  box-sizing:border-box;
+  border-style: solid;
+  border-width:3px;
+  border-color:transparent;
+}
+
+.player.hit {
+  animation-duration:0.5s; animation-name: bleed; animation-iteration-count: infinite;
+}
+
+@keyframes bleed {
+  0% {
+    border-color: transparent;
+  }
+  100% {
+    border-color: #f00;
+  }
 }
 
 .messages {
@@ -41,8 +62,8 @@
 
 .aim {
   position: absolute;
-  top: -9px;
-  left: 9px;
+  top: -12px;
+  left: 6px;
   height: 10px;
   width: 2px;
   background-color:#000;

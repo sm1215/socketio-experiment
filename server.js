@@ -7,44 +7,51 @@ const Player = require('./player.js');
 const players = [];
 const messages = [];
 const projectiles = [];
+
+let playerId = 0;
 let projectileId = 0;
+
 const PLAYER_SPEED = 5;
 const PROJECTILE_SPEED = 10;
 const WORLD_HEIGHT = 600;
 const WORLD_WIDTH = 800;
+const BULLET_DAMAGE = 25;
 
 app.use(express.static(__dirname + '/'));
 
 app.get('/', function(req, res){
-  //outputs clientside
-  console.log("game", game);
   res.sendFile(__dirname + '/index.html');
-  
 });
 
 io.on('connection', function(socket) {
-  const id = players.length;
-  const player = new Player(id);
-  players.push(player);
 
-  socket.emit('set player', player);
+  console.log('a user connected, players:', players.length);
+
+  function spawnPlayer() {
+    const id = playerId++;
+    const player = new Player(id);
+    player.socketId = socket.id;
+    players.push(player);
+   
+    socket.emit('set player', player);
+
+    io.emit('init players', players);
   
-  // Not sure if this should only be sent to the current socket or all sockets through io
-  io.emit('init players', players);
-
-  if(messages.length > 0) {
-    messages.forEach((entry) => {
-      io.emit('message received', entry.playerId, entry.message);
-    });
+    if(messages.length > 0) {
+      messages.forEach((entry) => {
+        io.emit('message received', entry.playerId, entry.message);
+      });
+    }
   }
-
-  console.log('a user connected, players:', players);
+  spawnPlayer();
 
   socket.on('fire', function(coords) {
     const projectile = {
       id: projectileId,
       x: coords.x1,
       y: coords.y1,
+      h: 4,
+      w: 4,
       x1: coords.x1,
       y1: coords.y1,
       x2: coords.x2,
@@ -109,6 +116,15 @@ io.on('connection', function(socket) {
     messages.push({ playerId, message });
     io.emit('message received', playerId, message);  
   });
+
+  // Need to match the socketId to the player's stored socketId
+  socket.on('disconnect', function() {
+    players.forEach((player, i) => {
+      if(player.socketId == socket.id) {
+        removePlayer(player, i);
+      }
+    });
+  });
 });
 
 function getPlayer(id) {
@@ -162,9 +178,36 @@ gameLoop();
 function update(delta) {
   updatePlayerPositions();
   updateProjectilePositions(delta);
+  checkCollisions();
 
   io.emit('update players', players);
-  io.emit('update projectiles', projectiles); 
+  io.emit('update projectiles', projectiles);
+}
+
+function checkCollisions() {
+  players.forEach((play, playI) => {
+    projectiles.forEach((proj, projI) => {
+      if((proj.x >= play.x) &&
+        (proj.x <= play.x + play.w) &&
+        (proj.y >= play.y) &&
+        (proj.y <= play.y + play.h)) {
+          playerHit(play, playI, proj, projI);
+        }
+    });
+  });
+}
+
+function playerHit(player, playerI, projectile, projectileI) {
+  player.hp -= BULLET_DAMAGE;
+  io.emit('player hit', player.id);
+  checkPlayerDead(player, playerI);
+  removeProjectile(projectile, projectileI);
+}
+
+function checkPlayerDead(player, playerI) {
+  if(player.hp <= 0) {
+    player.respawn();
+  }
 }
 
 function updatePlayerPositions() {
@@ -207,12 +250,10 @@ function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
 }
 
 function updateProjectilePositions(delta) {
-  const speed = 10;
-
   projectiles.forEach((p, i) => {
 
     const data = distanceAndAngleBetweenTwoPoints(p.x1, p.y1, p.x2, p.y2);
-    const velocity = speed;//data.distance / speed;
+    const velocity = PROJECTILE_SPEED; //data.distance / speed; //just going to use a constant speed
     const toTargetVector = new Vector(velocity, data.angle);
     const elapsedSeconds = delta * 100;
 
@@ -232,4 +273,9 @@ function checkProjectileAgainstBounds(p, i) {
 function removeProjectile(p, i) {
   projectiles.splice(i, 1);
   io.emit('remove projectile', p);
+}
+
+function removePlayer(p, i) {
+  players.splice(i, 1);
+  io.emit('remove player', p.id);
 }
