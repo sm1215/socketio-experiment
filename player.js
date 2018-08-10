@@ -11,7 +11,7 @@ class Player {
     this.MOVE_RIGHT = false;
     this.MOVE_DOWN = false;
     this.MOVE_LEFT = false;
-    this.color = '#'+Math.floor(Math.random()*16777215).toString(16); // ty Paul Irish & friends https://www.paulirish.com/2009/random-hex-color-code-snippets/
+    this.color = this.getColor();
   }
 
   respawn() {
@@ -19,6 +19,12 @@ class Player {
     this.y = 0;
     this.rot = 0;
     this.hp = 100;
+    this.color = this.getColor();
+  }
+
+  getColor() {
+    // ty Paul Irish & friends https://www.paulirish.com/2009/random-hex-color-code-snippets/
+    return '#'+Math.floor(Math.random()*16777215).toString(16); 
   }
 }
 
