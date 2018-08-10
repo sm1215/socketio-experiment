@@ -52,9 +52,6 @@ const game = {
   setPlayer(player) {
     game.playerId = player.id;
     game.player = player;
-
-    console.log("setPlayer id:", player.id);
-    console.log("setPlayer player", player);  
   },
 
   updatePlayers(players) {
