@@ -1,7 +1,7 @@
 const game = {
   h: 0,
   w: 0,
-  selectors: ['#world', '#chat'],
+  selectors: ['#world', '#chat', '#avatar'],
   els: {},
   player: null,
   chatting: false,
@@ -32,12 +32,11 @@ const game = {
   },
 
   setListeners:function() {
-    // window.addEventListener('resize', this.handleResize);
     window.addEventListener('keydown', this.handleKeydown);
     window.addEventListener('keyup', this.handleKeyup);
     window.addEventListener('mousedown', this.handleMouse);
     window.addEventListener('mousemove', this.handleMouse);
-    // window.addEventListener('mouseup', this.handleMouse);
+    game.els.avatar.addEventListener('change', this.handleAvatarChange);
 
     socket.on('set player', this.setPlayer);
     socket.on('init players', this.initPlayers);
@@ -71,6 +70,10 @@ const game = {
       playerEl.style.left = player.x + 'px';
       playerEl.style.transform = 'rotate(' + player.rot + 'deg)';
       playerEl.style.backgroundColor = player.color;
+
+      if(player.avatar) {
+        playerEl.setAttribute('data-avatar', player.avatar);
+      }
     });
   },
 
@@ -157,6 +160,15 @@ const game = {
         }, game.rotUpdateInterval);
       }
     }
+  },
+
+  handleAvatarChange(e) {
+    const playerEl = document.querySelector('#player-' + game.player.id);
+    const value = e.srcElement.value;
+    playerEl.setAttribute('data-avatar', value);
+    game.els.avatar.blur();
+
+    socket.emit('set avatar', game.player.id, value);
   },
 
   fire(mouseX, mouseY) {

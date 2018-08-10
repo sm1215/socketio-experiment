@@ -35,6 +35,25 @@
   border-style: solid;
   border-width:3px;
   border-color:transparent;
+  background-size:20px 20px;
+  background-repeat:no-repeat;
+  background-position:-3px -3px;
+}
+
+[data-avatar='billiam'] {
+  background-image: url('./images/billiam.jpg');
+}
+
+[data-avatar='graff'] {
+  background-image: url('./images/graff.jpg');
+}
+
+[data-avatar='rodge'] {
+  background-image: url('./images/rodge.jpg');
+}
+
+[data-avatar='squeaky'] {
+  background-image: url('./images/squeaky.jpg');
 }
 
 .player.hit {
@@ -77,4 +96,10 @@
   width: 4px;
   background-color:#000;
   z-index:1;
+}
+
+.avatar-select {
+  position: absolute;
+  top:0px;
+  right:50px;
 }

@@ -4,9 +4,9 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 const Player = require('./player.js');
 
-const players = [];
-const messages = [];
-const projectiles = [];
+let players = [];
+let messages = [];
+let projectiles = [];
 
 let playerId = 0;
 let projectileId = 0;
@@ -24,8 +24,6 @@ app.get('/', function(req, res){
 });
 
 io.on('connection', function(socket) {
-
-  console.log('a user connected, players:', players.length);
 
   function spawnPlayer() {
     const id = playerId++;
@@ -45,6 +43,17 @@ io.on('connection', function(socket) {
   }
   spawnPlayer();
   gameLoop();
+
+  console.log('a user connected, players:', players.length);
+
+  socket.on('set avatar', function(playerId, avatar) {
+    try {
+      const player = getPlayer(playerId);
+      player.avatar = avatar;
+    } catch(e) {
+      console.log("socket set avatar:", e);      
+    }
+  });
 
   socket.on('fire', function(coords) {
     const projectile = {
