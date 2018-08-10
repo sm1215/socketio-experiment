@@ -57,8 +57,3 @@
   background-color:#000;
   z-index:1;
 }
-
-.player,
-.projectile {
-  border-radius:100px;
-}

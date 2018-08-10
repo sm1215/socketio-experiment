@@ -10,6 +10,8 @@ const projectiles = [];
 let projectileId = 0;
 const PLAYER_SPEED = 5;
 const PROJECTILE_SPEED = 10;
+const WORLD_HEIGHT = 600;
+const WORLD_WIDTH = 800;
 
 app.use(express.static(__dirname + '/'));
 
@@ -55,8 +57,12 @@ io.on('connection', function(socket) {
   });
 
   socket.on('rotate', function(playerId, rot) {
-    const player = getPlayer(playerId);
-    player.rot = rot;
+    try {
+      const player = getPlayer(playerId);
+      player.rot = rot;
+    } catch(e) {
+      console.log("socket rotate:", e);
+    }
   });
 
   socket.on('startUp', function(playerId) {
@@ -153,51 +159,77 @@ const gameLoop = function() {
 
 gameLoop();
 
-function update() {
+function update(delta) {
   updatePlayerPositions();
-  updateProjectilePositions();
+  updateProjectilePositions(delta);
 
   io.emit('update players', players);
-  io.emit('update projectiles', projectiles);
+  io.emit('update projectiles', projectiles); 
 }
 
 function updatePlayerPositions() {
   players.forEach((player) => {
-    if (player.MOVE_UP) {
+    if (player.MOVE_UP && player.y > 0) {
       player.y -= PLAYER_SPEED;
     }
 
-    if (player.MOVE_RIGHT) {
+    if (player.MOVE_RIGHT && player.x < WORLD_WIDTH) {
       player.x += PLAYER_SPEED;
     }
 
-    if (player.MOVE_DOWN) {
+    if (player.MOVE_DOWN && player.y < WORLD_HEIGHT) {
       player.y += PLAYER_SPEED;
     }
 
-    if (player.MOVE_LEFT) {
+    if (player.MOVE_LEFT && player.x > 0) {
       player.x -= PLAYER_SPEED;
     }
   });
 }
 
-function updateProjectilePositions() {
-  projectiles.forEach((p, i) => {
-    let distance = PROJECTILE_SPEED;
-    // Shooting left or up
-    if((p.x1 - p.x2 > 0)) {// || (p.y1 - p.y2 > 0)) {
-      p.x -= PROJECTILE_SPEED;
-      // distance = -Math.abs(distance);
-    } else {
-      p.x += PROJECTILE_SPEED;
-    }
+function Vector(magnitude, angle) {
+  const angleRadians = (angle * Math.PI) / 180;
 
-    if(p.y1 - p.y2 > 0) {
-      p.y -= PROJECTILE_SPEED;
-    } else {
-      p.y += PROJECTILE_SPEED;
-    }
-    // p.x += PROJECTILE_SPEED;
-    // p.y += PROJECTILE_SPEED;
+  this.magnitudeX = magnitude * Math.cos(angleRadians);
+  this.magnitudeY = magnitude * Math.sin(angleRadians);
+}
+
+function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+
+  return {
+    // x^2 + y^2 = r^2
+    distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
+    //convert radians to degrees
+    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
+  }
+}
+
+function updateProjectilePositions(delta) {
+  const speed = 10;
+
+  projectiles.forEach((p, i) => {
+
+    const data = distanceAndAngleBetweenTwoPoints(p.x1, p.y1, p.x2, p.y2);
+    const velocity = speed;//data.distance / speed;
+    const toTargetVector = new Vector(velocity, data.angle);
+    const elapsedSeconds = delta * 100;
+
+    p.x += (toTargetVector.magnitudeX * elapsedSeconds);
+    p.y += (toTargetVector.magnitudeY * elapsedSeconds);
+
+    checkProjectileAgainstBounds(p, i);
   });
+}
+
+function checkProjectileAgainstBounds(p, i) {
+  if(p.x < 0 || p.x > WORLD_WIDTH || p.y < 0 || p.y > WORLD_HEIGHT) {
+    removeProjectile(p, i);
+  }
+}
+
+function removeProjectile(p, i) {
+  projectiles.splice(i, 1);
+  io.emit('remove projectile', p);
 }

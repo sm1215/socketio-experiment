@@ -43,7 +43,8 @@ const game = {
     socket.on('update players', this.updatePlayers);
     socket.on('update projectiles', this.updateProjectiles);
     socket.on('message received', this.messageReceived);
-    socket.on('player fired', this.playerFired);
+    socket.on('player fired', this.createProjectile);
+    socket.on('remove projectile', this.removeProjectile);
   },
 
   setPlayer(player) {
@@ -54,7 +55,7 @@ const game = {
   updatePlayers(players) {
     players.forEach(function(player) {
 
-      // Update out reference while we're at it
+      // Update our reference while we're at it
       if(game.playerId == player.id) {
         game.player = player;
       }
@@ -66,16 +67,18 @@ const game = {
     });
   },
 
-  updateProjectiles(projectiles) {
-    try {
-      projectiles.forEach((p) => {
+  updateProjectiles(projectiles) {    
+    projectiles.forEach((p) => {
+      try {
         const pEl = document.querySelector('#projectile-' + p.id);
         pEl.style.top = p.y + 'px';
         pEl.style.left = p.x + 'px';
-      });
-    } catch(e) {
-      
-    }
+      } catch(e) {
+        if(e instanceof TypeError) {
+          game.createProjectile(p);
+        }      
+      }
+    });
   },
 
   clearPlayers() {
@@ -93,9 +96,14 @@ const game = {
     game.updatePlayers(players);
   },
 
-  playerFired(projectile) {
-    let p = dom.createProjectileElement({ id: projectile.id, x: projectile.x1, y: projectile.y1 });    
+  createProjectile(projectile) {
+    let p = dom.createProjectileElement({ id: projectile.id, x: projectile.x2, y: projectile.y2 });    
     game.els.world.appendChild(p);
+  },
+
+  removeProjectile(projectile) {
+    const pEl = document.querySelector('#projectile-' + projectile.id);
+    pEl.parentNode.removeChild(pEl);
   },
 
   messageReceived(playerId, message) {
@@ -112,9 +120,9 @@ const game = {
     const x = e.pageX;
     const y = e.pageY;
 
-
+    
     if (e.type == 'mousedown') {
-      game.fire(x, y);
+      game.fire(x - game.world.offsetX, y- game.world.offsetY);
       socket.emit('click');
     } else if (e.type == 'mousemove' && game.player) {
       const rot = game.rotatePlayer(x, y);
