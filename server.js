@@ -185,10 +185,19 @@ function updateProjectilePositions() {
   projectiles.forEach((p, i) => {
     let distance = PROJECTILE_SPEED;
     // Shooting left or up
-    if((p.x1 - p.x2 > 0) || (p.y1 - p.y2 > 0)) {
-      distance = -Math.abs(distance);
+    if((p.x1 - p.x2 > 0)) {// || (p.y1 - p.y2 > 0)) {
+      p.x -= PROJECTILE_SPEED;
+      // distance = -Math.abs(distance);
+    } else {
+      p.x += PROJECTILE_SPEED;
     }
-    p.x += PROJECTILE_SPEED;
-    p.y += PROJECTILE_SPEED;
+
+    if(p.y1 - p.y2 > 0) {
+      p.y -= PROJECTILE_SPEED;
+    } else {
+      p.y += PROJECTILE_SPEED;
+    }
+    // p.x += PROJECTILE_SPEED;
+    // p.y += PROJECTILE_SPEED;
   });
 }
