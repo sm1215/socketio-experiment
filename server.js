@@ -44,6 +44,7 @@ io.on('connection', function(socket) {
     }
   }
   spawnPlayer();
+  gameLoop();
 
   socket.on('fire', function(coords) {
     const projectile = {
@@ -155,6 +156,12 @@ let previousTick = Date.now();
 let actualTicks = 0;
 
 const gameLoop = function() {
+
+  if(players.length <= 0) {
+    resetEntities();
+    return;
+  }
+
   const now = Date.now();
 
   actualTicks++;
@@ -171,6 +178,12 @@ const gameLoop = function() {
   } else {
     setImmediate(gameLoop);
   }
+}
+
+function resetEntities() {
+  players = [];
+  projectiles = [];
+  messages = [];
 }
 
 gameLoop();
