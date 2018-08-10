@@ -238,11 +238,11 @@ function updatePlayerPositions() {
       player.y -= PLAYER_SPEED;
     }
 
-    if (player.MOVE_RIGHT && player.x < WORLD_WIDTH) {
+    if (player.MOVE_RIGHT && player.x + player.w < WORLD_WIDTH) {
       player.x += PLAYER_SPEED;
     }
 
-    if (player.MOVE_DOWN && player.y < WORLD_HEIGHT) {
+    if (player.MOVE_DOWN && player.y + player.h < WORLD_HEIGHT) {
       player.y += PLAYER_SPEED;
     }
 
