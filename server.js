@@ -55,17 +55,18 @@ io.on('connection', function(socket) {
     }
   });
 
-  socket.on('fire', function(coords) {
+  socket.on('fire', function(data) {
     const projectile = {
       id: projectileId,
-      x: coords.x1,
-      y: coords.y1,
+      x: data.x1,
+      y: data.y1,
       h: 4,
       w: 4,
-      x1: coords.x1,
-      y1: coords.y1,
-      x2: coords.x2,
-      y2: coords.y2
+      x1: data.x1,
+      y1: data.y1,
+      x2: data.x2,
+      y2: data.y2,
+      playerId: data.playerId
     };
 
     projectiles.push(projectile);
@@ -209,6 +210,11 @@ function update(delta) {
 function checkCollisions() {
   players.forEach((play, playI) => {
     projectiles.forEach((proj, projI) => {
+
+      // Don't shoot yourself
+      if(proj.playerId == play.id) {
+        return;
+      }
       if((proj.x >= play.x) &&
         (proj.x <= play.x + play.w) &&
         (proj.y >= play.y) &&

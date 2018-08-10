@@ -171,6 +171,7 @@ const game = {
   fire(mouseX, mouseY) {
     if(!game.reloading) {
       socket.emit('fire', { 
+        playerId: game.player.id,
         x1: game.player.x + (game.player.w / 2),
         y1: game.player.y + (game.player.h / 2),
         x2: mouseX,
