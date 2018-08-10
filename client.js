@@ -127,8 +127,12 @@ const game = {
   },
 
   messageReceived(playerId, message) {
+    try {
     const messageEl = document.querySelector('#player-' + playerId + '-messages');
     messageEl.textContent = message;
+    } catch(e) {
+      console.log("messageReceived:", e);      
+    }
   },
 
   handleMouse(e) {
@@ -140,7 +144,6 @@ const game = {
     const x = e.pageX;
     const y = e.pageY;
 
-    
     if (e.type == 'mousedown') {
       game.fire(x - game.world.offsetX, y- game.world.offsetY);
       socket.emit('click');
