@@ -70,6 +70,7 @@ const game = {
       playerEl.style.top = player.y + 'px';
       playerEl.style.left = player.x + 'px';
       playerEl.style.transform = 'rotate(' + player.rot + 'deg)';
+      playerEl.style.backgroundColor = player.color;
     });
   },
 
