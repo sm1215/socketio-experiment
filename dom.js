@@ -33,6 +33,11 @@ const dom = {
     projectileElement.setAttribute('id', 'projectile-' + projectile.id);
     projectileElement.style.left = projectile.x + 'px';
     projectileElement.style.top = projectile.y + 'px';
+
+    if(projectile.color) {
+      projectileElement.style.backgroundColor = projectile.color;
+    }
+
     return projectileElement;
   }
 }

@@ -16,10 +16,13 @@ const PROJECTILE_SPEED = 10;
 const WORLD_HEIGHT = 600;
 const WORLD_WIDTH = 800;
 const BULLET_DAMAGE = 25;
+const BULLET_VELOCITY = 10;
+const BLOOD_PARTICLE_LIMIT = 8;
+const BLOOD_DISTANCE = { MIN: 50, MAX: 75 };
 
 app.use(express.static(__dirname + '/'));
 
-app.get('/', function(req, res){
+app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
@@ -57,6 +60,7 @@ io.on('connection', function(socket) {
 
   socket.on('fire', function(data) {
     const projectile = {
+      type: 'bullet',
       id: projectileId,
       x: data.x1,
       y: data.y1,
@@ -198,21 +202,63 @@ function resetEntities() {
 
 gameLoop();
 
+// sm1215
+let hits = [];
+
 function update(delta) {
   updatePlayerPositions();
   updateProjectilePositions(delta);
   checkCollisions();
+  updateBlood();
 
   io.emit('update players', players);
   io.emit('update projectiles', projectiles);
 }
 
+function getVariedAngle(angle) {
+  const angleVariance = 15;
+  return getRandomArbitrary(angle - angleVariance, angle + angleVariance);
+}
+
+function getRandomArbitrary(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function updateBlood() {
+  hits.forEach((hit) => {
+    const originalData = distanceAndAngleBetweenTwoPoints(hit.x1, hit.y1, hit.x2, hit.y2);
+    const originalVector = new Vector(BULLET_VELOCITY, originalData.angle);
+
+    for(var i = 0; i < BLOOD_PARTICLE_LIMIT; i++) {
+      const targetVector = new Vector(BULLET_VELOCITY, getVariedAngle(originalData.angle));
+
+      const projectile = {
+        type: 'blood',
+        id: projectileId,
+        x: hit.x1,
+        y: hit.y1,
+        h: 4,
+        w: 4,
+        x1: hit.x1,
+        y1: hit.y1,
+        x2: hit.x2,
+        y2: hit.y2,
+        angle: getVariedAngle(originalData.angle),
+        distance: getRandomArbitrary(BLOOD_DISTANCE.MIN, BLOOD_DISTANCE.MAX),
+        color: '#bd1010'
+      };
+      projectileId++;
+      projectiles.push(projectile);
+    }
+  });
+  hits = [];
+}
+
 function checkCollisions() {
   players.forEach((play, playI) => {
     projectiles.forEach((proj, projI) => {
-
       // Don't shoot yourself
-      if(proj.playerId == play.id) {
+      if(proj.playerId == play.id || proj.type != 'bullet') {
         return;
       }
       if((proj.x >= play.x) &&
@@ -220,6 +266,7 @@ function checkCollisions() {
         (proj.y >= play.y) &&
         (proj.y <= play.y + play.h)) {
           playerHit(play, playI, proj, projI);
+          hits.push({ x1: play.x, y1: play.y, x2: proj.x2, y2: proj.y2 });
         }
     });
   });
@@ -280,16 +327,39 @@ function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
 function updateProjectilePositions(delta) {
   projectiles.forEach((p, i) => {
 
+    //TODO: Could probably calculate these things once on object creation instead of during each loop
     const data = distanceAndAngleBetweenTwoPoints(p.x1, p.y1, p.x2, p.y2);
     const velocity = PROJECTILE_SPEED; //data.distance / speed; //just going to use a constant speed
-    const toTargetVector = new Vector(velocity, data.angle);
+    let angle;
+    
+    // TODO: hacked in for blood particles
+    if(p['angle']) {
+      angle = p['angle'];
+    } else {
+      angle = data.angle;
+    }
+
+    const toTargetVector = new Vector(velocity, angle);
     const elapsedSeconds = delta * 100;
 
     p.x += (toTargetVector.magnitudeX * elapsedSeconds);
     p.y += (toTargetVector.magnitudeY * elapsedSeconds);
 
+    // TODO: hacked in for blood particles
+    if(p['distance']) {
+      const distanceTraveled = calcDistance(p.x1, p.y1, p.x, p.y);
+      if(distanceTraveled > p.distance) {
+        removeProjectile(p, i);
+      }
+    }
     checkProjectileAgainstBounds(p, i);
   });
+}
+
+function calcDistance(x1, x2, y1, y2) {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+  return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 }
 
 function checkProjectileAgainstBounds(p, i) {

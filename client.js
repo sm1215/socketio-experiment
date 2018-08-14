@@ -117,7 +117,7 @@ const game = {
   },
 
   createProjectile(projectile) {
-    let p = dom.createProjectileElement({ id: projectile.id, x: projectile.x2, y: projectile.y2 });    
+    let p = dom.createProjectileElement({ id: projectile.id, x: projectile.x2, y: projectile.y2, color: projectile['color'] });    
     game.els.world.appendChild(p);
   },
 
