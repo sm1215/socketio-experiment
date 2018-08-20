@@ -39,6 +39,9 @@ const dom = {
         projectileElement.dataset[attr.key] = attr.value;
       });
     }
+    if(projectile.color) {
+      projectileElement.style.backgroundColor = projectile.color;
+    }
 
     return projectileElement;
   }
