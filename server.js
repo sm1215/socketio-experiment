@@ -2,7 +2,8 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-const Player = require('./player.js');
+const Player = require('./Player.js');
+const Projectile = require('./Projectile.js');
 
 let players = [];
 let messages = [];
@@ -16,6 +17,7 @@ const PROJECTILE_SPEED = 10;
 const WORLD_HEIGHT = 600;
 const WORLD_WIDTH = 800;
 const BULLET_DAMAGE = 25;
+const BLOOD_COUNT = 3;
 
 app.use(express.static(__dirname + '/'));
 
@@ -56,19 +58,18 @@ io.on('connection', function(socket) {
   });
 
   socket.on('fire', function(data) {
-    const projectile = {
+    const projectile = new Projectile({
       id: projectileId,
+      playerId: data.playerId,
+      type: 'bullet',
       x: data.x1,
       y: data.y1,
-      h: 4,
-      w: 4,
       x1: data.x1,
       y1: data.y1,
       x2: data.x2,
-      y2: data.y2,
-      playerId: data.playerId
-    };
-
+      y2: data.y2
+    });
+    
     projectiles.push(projectile);
     io.emit('player fired', projectile);
     projectileId += 1;
@@ -203,31 +204,49 @@ function resetEntities() {
 
 gameLoop();
 
+//sm1215
+let bloodQ = [];
+
 function update(delta) {
+  let nextBloodQ = [];
   updatePlayerPositions();
   updateProjectilePositions(delta);
-  checkCollisions();
+  nextBloodQ = checkCollisions();
+  
+  nextBloodQ.forEach((entry) => {
+    bloodQ.push(entry);
+  });
+  addBlood(bloodQ);
+
 
   io.emit('update players', players);
   io.emit('update projectiles', projectiles);
 }
 
 function checkCollisions() {
+  let bloodQ = [];
   players.forEach((play, playI) => {
     projectiles.forEach((proj, projI) => {
+      let nextBloodQ = [];
 
       // Don't shoot yourself
-      if(proj.playerId == play.id) {
+      if(proj.playerId == play.id || proj.type != 'bullet') {
         return;
       }
       if((proj.x >= play.x) &&
         (proj.x <= play.x + play.w) &&
         (proj.y >= play.y) &&
         (proj.y <= play.y + play.h)) {
+          nextBloodQ = queueBlood(play, proj);
           playerHit(play, playI, proj, projI);
         }
+
+        nextBloodQ.forEach((entry) => {
+          bloodQ.push(entry);
+        });
     });
   });
+  return bloodQ;
 }
 
 function playerHit(player, playerI, projectile, projectileI) {
@@ -235,6 +254,40 @@ function playerHit(player, playerI, projectile, projectileI) {
   io.emit('player hit', player.id);
   checkPlayerDead(player, playerI);
   removeProjectile(projectile, projectileI);
+}
+
+function addBlood(bloodQ) {
+  // console.log("projectileId", projectileId);
+  bloodQ.forEach((projectile) => {
+    projectile.id = projectileId;
+    projectileId++;
+    projectiles.push(projectile);
+  });
+  // console.log("projectiles", projectiles);
+}
+
+function queueBlood(player, projectile) {
+  // console.log("projectile", projectile);
+  const bloodQ = [];
+
+  for (let i = 0; i < BLOOD_COUNT; i++) {
+    let newProjectile = new Projectile({
+      // id: projectileId, //TODO: This is undefined / probably scope
+      playerId: player.id,
+      type: 'blood',
+      x: projectile.x,
+      y: projectile.y,
+      x1: projectile.x1,
+      y1: projectile.y1,
+      x2: projectile.x2,
+      y2: projectile.y2,
+      h: getRandomInt(2, 6),
+      w: getRandomInt(2, 6)
+    });
+    bloodQ.push(newProjectile);
+    // projectileId++;
+  }
+  return bloodQ;
 }
 
 function checkPlayerDead(player, playerI) {
@@ -263,25 +316,9 @@ function updatePlayerPositions() {
   });
 }
 
-function Vector(magnitude, angle) {
-  const angleRadians = (angle * Math.PI) / 180;
-
-  this.magnitudeX = magnitude * Math.cos(angleRadians);
-  this.magnitudeY = magnitude * Math.sin(angleRadians);
-}
-
-function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
-  const deltaX = x2 - x1;
-  const deltaY = y2 - y1;
-
-  return {
-    // x^2 + y^2 = r^2
-    distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
-    //convert radians to degrees
-    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
-  }
-}
-
+//store a history array of moves
+//refer back to a previous targetvector.magnitude for blood trails
+//try adjusting data.angle for randomness
 function updateProjectilePositions(delta) {
   projectiles.forEach((p, i) => {
 
@@ -292,6 +329,12 @@ function updateProjectilePositions(delta) {
 
     p.x += (toTargetVector.magnitudeX * elapsedSeconds);
     p.y += (toTargetVector.magnitudeY * elapsedSeconds);
+
+    if(!p['history']) {
+      p['history'] = [];
+    }
+
+    p.history.push({ data: data });
 
     checkProjectileAgainstBounds(p, i);
   });
@@ -311,4 +354,29 @@ function removeProjectile(p, i) {
 function removePlayer(p, i) {
   players.splice(i, 1);
   io.emit('remove player', p.id);
+}
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+}
+
+function Vector(magnitude, angle) {
+  const angleRadians = (angle * Math.PI) / 180;
+
+  this.magnitudeX = magnitude * Math.cos(angleRadians);
+  this.magnitudeY = magnitude * Math.sin(angleRadians);
+}
+
+function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+
+  return {
+    // x^2 + y^2 = r^2
+    distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
+    //convert radians to degrees
+    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
+  }
 }

@@ -98,6 +98,14 @@
   z-index:1;
 }
 
+.projectile[data-type='bullet'] {
+  background-color:#000;
+}
+
+.projectile[data-type='blood'] {
+  background-color:#b30000';
+}
+
 .avatar-select {
   position: absolute;
   top:0px;

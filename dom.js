@@ -33,6 +33,13 @@ const dom = {
     projectileElement.setAttribute('id', 'projectile-' + projectile.id);
     projectileElement.style.left = projectile.x + 'px';
     projectileElement.style.top = projectile.y + 'px';
+
+    if(projectile.data) {
+      projectile.data.forEach((attr) => {
+        projectileElement.dataset[attr.key] = attr.value;
+      });
+    }
+
     return projectileElement;
   }
 }
