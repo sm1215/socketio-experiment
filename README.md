@@ -14,7 +14,7 @@ some bigger todo ideas
 - change underlying dom base to be canvas instead
 - particles
 - level art
-- layered levels, hide under canopy-type layers. under roof / treetop / some kind of grating pattern
+- layered levels, hide under canopy-type layers. under roof / treetop / some kind of grating pattern 
 
 
 
