@@ -2,8 +2,7 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-const Player = require('./Player.js');
-const Projectile = require('./Projectile.js');
+const Player = require('./player.js');
 
 let players = [];
 let messages = [];
@@ -17,7 +16,6 @@ const PROJECTILE_SPEED = 10;
 const WORLD_HEIGHT = 600;
 const WORLD_WIDTH = 800;
 const BULLET_DAMAGE = 25;
-// const BLOOD_COUNT = 3;
 const BULLET_VELOCITY = 10;
 const BLOOD_PARTICLE_LIMIT = 8;
 const BLOOD_DISTANCE = { MIN: 50, MAX: 75 };
@@ -61,20 +59,20 @@ io.on('connection', function(socket) {
   });
 
   socket.on('fire', function(data) {
-    const projectile = new Projectile({
-    // const projectile = {
-      // type: 'bullet',
-      id: projectileId,
-      playerId: data.playerId,
+    const projectile = {
       type: 'bullet',
+      id: projectileId,
       x: data.x1,
       y: data.y1,
+      h: 4,
+      w: 4,
       x1: data.x1,
       y1: data.y1,
       x2: data.x2,
-      y2: data.y2
-    });
-    
+      y2: data.y2,
+      playerId: data.playerId
+    };
+
     projectiles.push(projectile);
     io.emit('player fired', projectile);
     projectileId += 1;
@@ -92,8 +90,6 @@ io.on('connection', function(socket) {
   socket.on('startUp', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_UP = true;
-    // Set the opposite to false it was somehow flagged and player is trying to regain control
-    player.MOVE_DOWN = false;
   });
 
   socket.on('stopUp', function(playerId) {
@@ -104,7 +100,6 @@ io.on('connection', function(socket) {
   socket.on('startDown', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_DOWN = true;
-    player.MOVE_UP = false;
   });
 
   socket.on('stopDown', function(playerId) {
@@ -115,7 +110,6 @@ io.on('connection', function(socket) {
   socket.on('startLeft', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_LEFT = true;
-    player.MOVE_RIGHT = false;
   });
 
   socket.on('stopLeft', function(playerId) {
@@ -126,7 +120,6 @@ io.on('connection', function(socket) {
   socket.on('startRight', function(playerId) {
     const player = getPlayer(playerId);
     player.MOVE_RIGHT = true;
-    player.MOVE_LEFT = false;
   });
 
   socket.on('stopRight', function(playerId) {
@@ -209,30 +202,14 @@ function resetEntities() {
 
 gameLoop();
 
-<<<<<<< HEAD
-//sm1215
-let bloodQ = [];
-=======
 // sm1215
 let hits = [];
->>>>>>> 81592130c3646f8944888e66dc9500225be463f2
 
 function update(delta) {
-  let nextBloodQ = [];
   updatePlayerPositions();
   updateProjectilePositions(delta);
-<<<<<<< HEAD
-  nextBloodQ = checkCollisions();
-  
-  nextBloodQ.forEach((entry) => {
-    bloodQ.push(entry);
-  });
-  addBlood(bloodQ);
-
-=======
   checkCollisions();
   updateBlood();
->>>>>>> 81592130c3646f8944888e66dc9500225be463f2
 
   io.emit('update players', players);
   io.emit('update projectiles', projectiles);
@@ -278,14 +255,8 @@ function updateBlood() {
 }
 
 function checkCollisions() {
-  let bloodQ = [];
   players.forEach((play, playI) => {
     projectiles.forEach((proj, projI) => {
-<<<<<<< HEAD
-      let nextBloodQ = [];
-
-=======
->>>>>>> 81592130c3646f8944888e66dc9500225be463f2
       // Don't shoot yourself
       if(proj.playerId == play.id || proj.type != 'bullet') {
         return;
@@ -294,17 +265,11 @@ function checkCollisions() {
         (proj.x <= play.x + play.w) &&
         (proj.y >= play.y) &&
         (proj.y <= play.y + play.h)) {
-          nextBloodQ = queueBlood(play, proj);
           playerHit(play, playI, proj, projI);
           hits.push({ x1: play.x, y1: play.y, x2: proj.x2, y2: proj.y2 });
         }
-
-        nextBloodQ.forEach((entry) => {
-          bloodQ.push(entry);
-        });
     });
   });
-  return bloodQ;
 }
 
 function playerHit(player, playerI, projectile, projectileI) {
@@ -312,40 +277,6 @@ function playerHit(player, playerI, projectile, projectileI) {
   io.emit('player hit', player.id);
   checkPlayerDead(player, playerI);
   removeProjectile(projectile, projectileI);
-}
-
-function addBlood(bloodQ) {
-  // console.log("projectileId", projectileId);
-  bloodQ.forEach((projectile) => {
-    projectile.id = projectileId;
-    projectileId++;
-    projectiles.push(projectile);
-  });
-  // console.log("projectiles", projectiles);
-}
-
-function queueBlood(player, projectile) {
-  // console.log("projectile", projectile);
-  const bloodQ = [];
-
-  for (let i = 0; i < BLOOD_COUNT; i++) {
-    let newProjectile = new Projectile({
-      // id: projectileId, //TODO: This is undefined / probably scope
-      playerId: player.id,
-      type: 'blood',
-      x: projectile.x,
-      y: projectile.y,
-      x1: projectile.x1,
-      y1: projectile.y1,
-      x2: projectile.x2,
-      y2: projectile.y2,
-      h: getRandomInt(2, 6),
-      w: getRandomInt(2, 6)
-    });
-    bloodQ.push(newProjectile);
-    // projectileId++;
-  }
-  return bloodQ;
 }
 
 function checkPlayerDead(player, playerI) {
@@ -374,9 +305,25 @@ function updatePlayerPositions() {
   });
 }
 
-//store a history array of moves
-//refer back to a previous targetvector.magnitude for blood trails
-//try adjusting data.angle for randomness
+function Vector(magnitude, angle) {
+  const angleRadians = (angle * Math.PI) / 180;
+
+  this.magnitudeX = magnitude * Math.cos(angleRadians);
+  this.magnitudeY = magnitude * Math.sin(angleRadians);
+}
+
+function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
+  const deltaX = x2 - x1;
+  const deltaY = y2 - y1;
+
+  return {
+    // x^2 + y^2 = r^2
+    distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
+    //convert radians to degrees
+    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
+  }
+}
+
 function updateProjectilePositions(delta) {
   projectiles.forEach((p, i) => {
 
@@ -398,14 +345,6 @@ function updateProjectilePositions(delta) {
     p.x += (toTargetVector.magnitudeX * elapsedSeconds);
     p.y += (toTargetVector.magnitudeY * elapsedSeconds);
 
-<<<<<<< HEAD
-    if(!p['history']) {
-      p['history'] = [];
-    }
-
-    p.history.push({ data: data });
-
-=======
     // TODO: hacked in for blood particles
     if(p['distance']) {
       const distanceTraveled = calcDistance(p.x1, p.y1, p.x, p.y);
@@ -413,7 +352,6 @@ function updateProjectilePositions(delta) {
         removeProjectile(p, i);
       }
     }
->>>>>>> 81592130c3646f8944888e66dc9500225be463f2
     checkProjectileAgainstBounds(p, i);
   });
 }
@@ -438,29 +376,4 @@ function removeProjectile(p, i) {
 function removePlayer(p, i) {
   players.splice(i, 1);
   io.emit('remove player', p.id);
-}
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
-}
-
-function Vector(magnitude, angle) {
-  const angleRadians = (angle * Math.PI) / 180;
-
-  this.magnitudeX = magnitude * Math.cos(angleRadians);
-  this.magnitudeY = magnitude * Math.sin(angleRadians);
-}
-
-function distanceAndAngleBetweenTwoPoints(x1, y1, x2, y2) {
-  const deltaX = x2 - x1;
-  const deltaY = y2 - y1;
-
-  return {
-    // x^2 + y^2 = r^2
-    distance: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
-    //convert radians to degrees
-    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
-  }
 }
