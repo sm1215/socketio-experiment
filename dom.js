@@ -44,5 +44,20 @@ const dom = {
     }
 
     return projectileElement;
+  },
+
+  getPlayer(id) {
+    return document.querySelector('#player-' + id);
+  },
+
+  getProjectile(id) {
+    return document.querySelector('#projectile-' + id);
+  },
+
+  setStyles(el, opts) {
+    var keys = Object.keys(opts);
+    keys.forEach(function(k) {
+      el.style[k] = opts[k];
+    });
   }
 }
