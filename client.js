@@ -12,6 +12,23 @@ const client = {
   rotUpdateInterval: 100,
   reloadInterval: 100,
   BLEED_TIME: 500, //ms
+  windowEvents: [
+    { name: 'keydown', handler: 'handleKeydown' },
+    { name: 'keyup', handler: 'handleKeyup' },
+    { name: 'mousedown', handler: 'handleMouse' },
+    { name: 'mousemove', handler: 'handleMouse' }
+  ],
+  socketEvents: [
+    { name: 'set player', handler: 'setPlayer' },
+    { name: 'init players', handler: 'initPlayers' },
+    { name: 'update players', handler: 'updatePlayers' },
+    { name: 'update projectiles', handler: 'updateProjectiles' },
+    { name: 'message received', handler: 'messageReceived' },
+    { name: 'player fired', handler: 'createProjectile' },
+    { name: 'remove projectile', handler: 'removeProjectile' },
+    { name: 'player hit', handler: 'playerHit' },
+    { name: 'remove player', handler: 'removePlayer' }
+  ],
 
   init: function() {
     this.setupEls();
@@ -24,7 +41,6 @@ const client = {
 
   setupEls:function() {
     this.selectors.forEach(function(selector) {
-      //remove class / id denotion along with whitespace
       var pattern = new RegExp(/[.#\s]/g);
       var key = selector.replace(pattern, '');
       client.els[key] = document.querySelector(selector);
@@ -32,21 +48,15 @@ const client = {
   },
 
   setListeners:function() {
-    window.addEventListener('keydown', this.handleKeydown);
-    window.addEventListener('keyup', this.handleKeyup);
-    window.addEventListener('mousedown', this.handleMouse);
-    window.addEventListener('mousemove', this.handleMouse);
-    client.els.avatar.addEventListener('change', this.handleAvatarChange);
+    this.windowEvents.forEach(function(event) {
+      window.addEventListener(event.name, client[event.handler]);
+    });
 
-    socket.on('set player', this.setPlayer);
-    socket.on('init players', this.initPlayers);
-    socket.on('update players', this.updatePlayers);
-    socket.on('update projectiles', this.updateProjectiles);
-    socket.on('message received', this.messageReceived);
-    socket.on('player fired', this.createProjectile);
-    socket.on('remove projectile', this.removeProjectile);
-    socket.on('player hit', this.playerHit);
-    socket.on('remove player', this.removePlayer);
+    this.socketEvents.forEach(function(event) {
+      socket.on(event.name, client[event.handler]);
+    });
+
+    client.els.avatar.addEventListener('change', this.handleAvatarChange);
   },
 
   setPlayer(player) {
@@ -62,11 +72,13 @@ const client = {
         client.player = player;
       }
 
-      const playerEl = document.querySelector('#player-' + player.id);
-      playerEl.style.top = player.y + 'px';
-      playerEl.style.left = player.x + 'px';
-      playerEl.style.transform = 'rotate(' + player.rot + 'deg)';
-      playerEl.style.backgroundColor = player.color;
+      const playerEl = dom.getPlayer(player.id);
+      dom.setStyles(playerEl, {
+        top: player.y + 'px',
+        left: player.x + 'px',
+        transform: 'rotate(' + player.rot + 'deg)',
+        backgroundColor: player.color
+      });
 
       if(player.avatar) {
         playerEl.setAttribute('data-avatar', player.avatar);
@@ -74,12 +86,18 @@ const client = {
     });
   },
 
-  updateProjectiles(projectiles) {    
+  updateProjectiles(projectiles) {
     projectiles.forEach((p) => {
       try {
-        const pEl = document.querySelector('#projectile-' + p.id);
-        pEl.style.top = p.y + 'px';
-        pEl.style.left = p.x + 'px';
+        const pEl = dom.getProjectile(p.id);
+        dom.setStyles(pEl, {
+          top: p.y + 'px',
+          left: p.x + 'px'
+        });
+
+        // const pEl = document.querySelector('#projectile-' + p.id);
+        // pEl.style.top = p.y + 'px';
+        // pEl.style.left = p.x + 'px';
       } catch(e) {
         if(e instanceof TypeError) {
           client.createProjectile(p);
