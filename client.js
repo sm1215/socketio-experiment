@@ -1,4 +1,4 @@
-const game = {
+const client = {
   h: 0,
   w: 0,
   selectors: ['#world', '#chat', '#avatar'],
@@ -27,7 +27,7 @@ const game = {
       //remove class / id denotion along with whitespace
       var pattern = new RegExp(/[.#\s]/g);
       var key = selector.replace(pattern, '');
-      game.els[key] = document.querySelector(selector);
+      client.els[key] = document.querySelector(selector);
     });
   },
 
@@ -36,7 +36,7 @@ const game = {
     window.addEventListener('keyup', this.handleKeyup);
     window.addEventListener('mousedown', this.handleMouse);
     window.addEventListener('mousemove', this.handleMouse);
-    game.els.avatar.addEventListener('change', this.handleAvatarChange);
+    client.els.avatar.addEventListener('change', this.handleAvatarChange);
 
     socket.on('set player', this.setPlayer);
     socket.on('init players', this.initPlayers);
@@ -50,16 +50,16 @@ const game = {
   },
 
   setPlayer(player) {
-    game.playerId = player.id;
-    game.player = player;
+    client.playerId = player.id;
+    client.player = player;
   },
 
   updatePlayers(players) {
     players.forEach(function(player) {
 
       // Update our reference while we're at it
-      if(game.playerId == player.id) {
-        game.player = player;
+      if(client.playerId == player.id) {
+        client.player = player;
       }
 
       const playerEl = document.querySelector('#player-' + player.id);
@@ -82,7 +82,7 @@ const game = {
         pEl.style.left = p.x + 'px';
       } catch(e) {
         if(e instanceof TypeError) {
-          game.createProjectile(p);
+          client.createProjectile(p);
         }      
       }
     });
@@ -96,11 +96,11 @@ const game = {
   },
 
   initPlayers(players) {
-    game.clearPlayers();
+    client.clearPlayers();
     players.forEach((player) => {
-      game.els.world.appendChild(dom.createPlayerElement(player));
+      client.els.world.appendChild(dom.createPlayerElement(player));
     });
-    game.updatePlayers(players);
+    client.updatePlayers(players);
   },
 
   playerHit(playerId) {
@@ -108,7 +108,7 @@ const game = {
     playerEl.classList.add('hit');
     setTimeout(function() {
       playerEl.classList.remove('hit');
-    }, game.BLEED_TIME);
+    }, client.BLEED_TIME);
   },
 
   removePlayer(playerId) {
@@ -118,7 +118,7 @@ const game = {
 
   createProjectile(projectile) {
     let p = dom.createProjectileElement({ id: projectile.id, x: projectile.x2, y: projectile.y2, color: projectile['color'] });    
-    game.els.world.appendChild(p);
+    client.els.world.appendChild(p);
   },
 
   removeProjectile(projectile) {
@@ -136,7 +136,7 @@ const game = {
   },
 
   handleMouse(e) {
-    if(!game.player) {
+    if(!client.player) {
       console.warn('no player');
       return;
     }
@@ -145,48 +145,48 @@ const game = {
     const y = e.pageY;
 
     if (e.type == 'mousedown') {
-      game.fire(x - game.world.offsetX, y- game.world.offsetY);
+      client.fire(x - client.world.offsetX, y- client.world.offsetY);
       socket.emit('click');
-    } else if (e.type == 'mousemove' && game.player) {
-      const rot = game.rotatePlayer(x, y);
+    } else if (e.type == 'mousemove' && client.player) {
+      const rot = client.rotatePlayer(x, y);
 
-      if(!game.sentRotate) {
-        socket.emit('rotate', game.player.id, rot);
-        game.sentRotate = setTimeout(function() {
-          game.sentRotate = null;
-        }, game.rotUpdateInterval);
+      if(!client.sentRotate) {
+        socket.emit('rotate', client.player.id, rot);
+        client.sentRotate = setTimeout(function() {
+          client.sentRotate = null;
+        }, client.rotUpdateInterval);
       }
     }
   },
 
   handleAvatarChange(e) {
-    const playerEl = document.querySelector('#player-' + game.player.id);
+    const playerEl = document.querySelector('#player-' + client.player.id);
     const value = e.srcElement.value;
     playerEl.setAttribute('data-avatar', value);
-    game.els.avatar.blur();
+    client.els.avatar.blur();
 
-    socket.emit('set avatar', game.player.id, value);
+    socket.emit('set avatar', client.player.id, value);
   },
 
   fire(mouseX, mouseY) {
-    if(!game.reloading) {
+    if(!client.reloading) {
       socket.emit('fire', { 
-        playerId: game.player.id,
-        x1: game.player.x + (game.player.w / 2),
-        y1: game.player.y + (game.player.h / 2),
+        playerId: client.player.id,
+        x1: client.player.x + (client.player.w / 2),
+        y1: client.player.y + (client.player.h / 2),
         x2: mouseX,
         y2: mouseY
       });
-      game.reloading = setTimeout(function() {
-        game.reloading = null;
-      }, game.reloadInterval);
+      client.reloading = setTimeout(function() {
+        client.reloading = null;
+      }, client.reloadInterval);
     }    
   },
 
   rotatePlayer(mouseX, mouseY){
     // Need to take into account the world offset because the mouse can still be used outside of world bounds
-    const x1 = game.world.offsetX + (game.player.x - (game.player.w / 2));
-    const y1 = game.world.offsetY + (game.player.y - (game.player.h / 2));
+    const x1 = client.world.offsetX + (client.player.x - (client.player.w / 2));
+    const y1 = client.world.offsetY + (client.player.y - (client.player.h / 2));
     const x2 = mouseX;
     const y2 = mouseY;
 
@@ -196,14 +196,14 @@ const game = {
     const deg = rad * (180 / Math.PI);
     const rot = deg + 90; // adding 90 will put us in the correct quadrant
 
-    const playerEl = document.querySelector('#player-' + game.player.id);
+    const playerEl = document.querySelector('#player-' + client.player.id);
     
     playerEl.style.transform = 'rotate(' + rot + 'deg)';
     return rot;
   },
 
   handleKeyup(e) {
-    if(game.chatting) {
+    if(client.chatting) {
       return;
     }
 
@@ -211,22 +211,22 @@ const game = {
     
     // Up
     if(k == 87 || k == 38) {
-      socket.emit('stopUp', game.player.id);
+      socket.emit('stopUp', client.player.id);
     }
 
     // Down
     if(k == 83 || k == 40) {
-      socket.emit('stopDown', game.player.id);
+      socket.emit('stopDown', client.player.id);
     }
 
     // Left
     if(k == 65 || k == 37) {
-      socket.emit('stopLeft', game.player.id);
+      socket.emit('stopLeft', client.player.id);
     }
 
     // Right
     if(k == 68 || k == 39) {
-      socket.emit('stopRight', game.player.id);
+      socket.emit('stopRight', client.player.id);
     }
   },
 
@@ -234,48 +234,48 @@ const game = {
     const k = e.keyCode;
     
     // Up
-    if((k == 87 || k == 38) && !game.chatting) {
-      socket.emit('startUp', game.player.id);
+    if((k == 87 || k == 38) && !client.chatting) {
+      socket.emit('startUp', client.player.id);
     }
 
     // Down
-    if((k == 83 || k == 40) && !game.chatting) {
-      socket.emit('startDown', game.player.id);
+    if((k == 83 || k == 40) && !client.chatting) {
+      socket.emit('startDown', client.player.id);
     }
 
     // Left
-    if((k == 65 || k == 37) && !game.chatting) {
-      socket.emit('startLeft', game.player.id);
+    if((k == 65 || k == 37) && !client.chatting) {
+      socket.emit('startLeft', client.player.id);
     }
 
     // Right
-    if((k == 68 || k == 39) && !game.chatting) {
-      socket.emit('startRight', game.player.id);
+    if((k == 68 || k == 39) && !client.chatting) {
+      socket.emit('startRight', client.player.id);
     }
 
     // // Space
-    // if((k == 32) && !game.chatting) {
-    //   socket.emit('fire', game.player.id);
+    // if((k == 32) && !client.chatting) {
+    //   socket.emit('fire', client.player.id);
     // }
 
     // Enter
     if(k == 13) {
-      if(game.chatting) {
-        socket.emit('send message', game.player.id, game.els.chat.value);
-        game.els.chat.value = '';
-        game.chatting = false;
-        game.els.chat.blur();
+      if(client.chatting) {
+        socket.emit('send message', client.player.id, client.els.chat.value);
+        client.els.chat.value = '';
+        client.chatting = false;
+        client.els.chat.blur();
       } else {
-        game.els.chat.focus();
-        game.chatting = true;
+        client.els.chat.focus();
+        client.chatting = true;
       }
     }
 
     // Esc
     if(k == 27) {
-      game.els.chat.value = '';
-      game.els.chat.blur();
-      game.els.chatting = false;
+      client.els.chat.value = '';
+      client.els.chat.blur();
+      client.els.chatting = false;
     }
   }
 }
